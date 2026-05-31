@@ -6,147 +6,83 @@
 <title>Języki Teatru – Niezbędnik Młodego Widza</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body {
-  height: 100%;
-  background: #2c2420;
+  height: 100%; background: #2c2420;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  overflow: hidden;
-  color: #fff;
-  user-select: none;
-  -webkit-user-select: none;
+  overflow: hidden; color: #fff; user-select: none; -webkit-user-select: none;
 }
-
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 30% 40%, #3a2e28 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 60%, #1e1814 0%, transparent 60%);
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, #3a2e28 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, #1e1814 0%, transparent 60%);
   pointer-events: none;
 }
-
 #stage {
-  position: fixed;
-  inset: 0 0 72px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  position: fixed; inset: 0 0 72px 0;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
-
 #bookWrap {
-  position: relative;
-  transform-origin: center center;
-  transition: transform 0.12s ease-out;
-  cursor: grab;
+  position: relative; transform-origin: center center;
+  transition: transform 0.12s ease-out; cursor: grab;
 }
 #bookWrap.dragging { cursor: grabbing; transition: none; }
-
 #bookShadow {
-  position: absolute;
-  bottom: -18px;
-  left: 6%; right: 6%;
-  height: 30px;
-  background: rgba(0,0,0,0.5);
-  filter: blur(14px);
-  border-radius: 50%;
-  pointer-events: none;
+  position: absolute; bottom: -18px; left: 6%; right: 6%;
+  height: 30px; background: rgba(0,0,0,0.5);
+  filter: blur(14px); border-radius: 50%; pointer-events: none;
 }
+#canvas { display: block; border-radius: 2px; box-shadow: 0 8px 40px rgba(0,0,0,0.55); }
 
-#canvas {
-  display: block;
-  border-radius: 2px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.55);
-}
-
-/* ── Toolbar ── */
+/* Toolbar */
 #toolbar {
-  position: fixed;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  background: rgba(18,14,12,0.92);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 40px;
-  padding: 4px 8px;
-  z-index: 200;
-  box-shadow: 0 4px 28px rgba(0,0,0,0.5);
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1px;
+  background: rgba(18,14,12,0.92); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 40px;
+  padding: 4px 8px; z-index: 200; box-shadow: 0 4px 28px rgba(0,0,0,0.5);
   white-space: nowrap;
 }
-
 .tb-btn {
-  background: none; border: none;
-  color: #aaa;
-  width: 36px; height: 36px;
-  border-radius: 50%;
+  background: none; border: none; color: #aaa;
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: background 0.1s, color 0.1s;
-  flex-shrink: 0;
+  cursor: pointer; transition: background 0.1s, color 0.1s; flex-shrink: 0;
 }
 .tb-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
 .tb-btn:disabled { opacity: 0.25; cursor: default; }
 .tb-btn:disabled:hover { background: none; color: #aaa; }
 .tb-btn.active { color: #e8c97a; }
-
 .tb-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.1); margin: 0 2px; }
-
-#pageNum {
-  font-size: 12px; color: #888;
-  min-width: 68px; text-align: center;
-  letter-spacing: 0.03em;
-}
-
-#zoomPct {
-  font-size: 12px; color: #888;
-  min-width: 36px; text-align: center;
-  cursor: pointer;
-}
+#pageNum { font-size: 12px; color: #888; min-width: 68px; text-align: center; letter-spacing: 0.03em; }
+#zoomPct { font-size: 12px; color: #888; min-width: 36px; text-align: center; cursor: pointer; }
 #zoomPct:hover { color: #fff; }
-
 .dl-btn {
-  display: flex; align-items: center; gap: 5px;
-  color: #aaa; text-decoration: none;
-  font-size: 12px; padding: 0 10px; height: 36px;
-  border-radius: 40px;
+  display: flex; align-items: center; gap: 5px; color: #aaa; text-decoration: none;
+  font-size: 12px; padding: 0 10px; height: 36px; border-radius: 40px;
   transition: background 0.1s, color 0.1s;
 }
 .dl-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
 
-/* ── Loading ── */
+/* Loading */
 #loading {
-  position: fixed; inset: 0;
-  background: #2c2420;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  z-index: 999; gap: 14px;
-  transition: opacity 0.5s;
+  position: fixed; inset: 0; background: #2c2420;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; gap: 14px; transition: opacity 0.5s;
 }
 #loading.hidden { opacity: 0; pointer-events: none; }
 .loader-ring {
-  width: 38px; height: 38px;
-  border: 3px solid rgba(255,255,255,0.08);
-  border-top-color: #e8c97a;
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
+  width: 38px; height: 38px; border: 3px solid rgba(255,255,255,0.08);
+  border-top-color: #e8c97a; border-radius: 50%; animation: spin 0.75s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 #loadText { font-size: 12px; color: #666; letter-spacing: 0.06em; }
 
-/* ── Thumb panel ── */
+/* Thumbnail panel */
 #thumbPanel {
   position: fixed; top: 0; right: 0; bottom: 0; width: 108px;
-  background: rgba(12,10,8,0.96);
-  backdrop-filter: blur(10px);
+  background: rgba(12,10,8,0.96); backdrop-filter: blur(10px);
   border-left: 1px solid rgba(255,255,255,0.06);
-  overflow-y: auto; z-index: 150;
-  padding: 10px 7px;
+  overflow-y: auto; z-index: 150; padding: 10px 7px;
   display: none; flex-direction: column; gap: 5px;
   scrollbar-width: thin; scrollbar-color: #333 transparent;
 }
@@ -184,19 +120,15 @@ body::before {
   <button class="tb-btn" id="btnNext" title="Następna (→)">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-
   <div class="tb-sep"></div>
-
-  <button class="tb-btn" id="btnZoomOut" title="Pomniejsz (-)">
+  <button class="tb-btn" id="btnZoomOut" title="-">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
   </button>
   <span id="zoomPct" title="Reset zoom">100%</span>
-  <button class="tb-btn" id="btnZoomIn" title="Powiększ (+)">
+  <button class="tb-btn" id="btnZoomIn" title="+">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
   </button>
-
   <div class="tb-sep"></div>
-
   <button class="tb-btn" id="btnSound" title="Dźwięk">
     <svg id="soundIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -204,15 +136,11 @@ body::before {
       <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
     </svg>
   </button>
-
   <div class="tb-sep"></div>
-
   <button class="tb-btn" id="btnThumbs" title="Miniatury">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
   </button>
-
   <div class="tb-sep"></div>
-
   <a class="dl-btn" href="Jezyki teatru. Niezbednik Mlodego Widza.pdf" download>
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     PDF
@@ -220,80 +148,56 @@ body::before {
 </div>
 
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
-const TOTAL  = 26;
-const ASPECT = 957 / 1388;  // page width / height
-const FLIP_MS = 680;
-const BIG = 15000;
-
+// ── Config ────────────────────────────────────────────────────────────────────
+const TOTAL   = 26;
+const ASPECT  = 957 / 1388;
+const FLIP_MS = 650;
 const pageSrc = i => `pages/page-${String(i+1).padStart(2,'0')}.png`;
-const imgs = Array(TOTAL).fill(null);
+const imgs    = Array(TOTAL).fill(null);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────────────────────────────────────
-let spread   = 0;     // left-page index of current spread
-let animDir  = null;  // 'next' | 'prev' | null
-let animT    = 0;
-let animRAF  = null;
-let animStart = 0;
-let soundOn  = true;
-let thumbsOpen = false;
-
-// Zoom / pan
-let zoomLevel = 1;
-let panX = 0, panY = 0;
+// ── State ─────────────────────────────────────────────────────────────────────
+let spread = 0;
+let animDir = null, animT = 0, animStart = 0;
+let soundOn = true, thumbsOpen = false;
+let zoomLevel = 1, panX = 0, panY = 0;
 let isDragging = false, dragSX, dragSY, panSX, panSY;
-
-// Canvas
 let canvas, ctx, cW, cH, pW, pH;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SIZING
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Sizing — key fix: multiply canvas pixels by devicePixelRatio ──────────────
 function calcSize() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight - 80;
-  let h = Math.min(vh - 12, 860);
+  const vw = window.innerWidth, vh = window.innerHeight - 48;
+  let h = Math.min(vh - 6, 1200);
   let w = Math.round(h * ASPECT);
-  if (w * 2 + 6 > vw - 28) {
-    w = Math.floor((vw - 34) / 2);
-    h = Math.round(w / ASPECT);
-  }
+  if (w * 2 + 6 > vw - 8) { w = Math.floor((vw - 14) / 2); h = Math.round(w / ASPECT); }
   return { w, h };
 }
 
 function applySize() {
   const { w, h } = calcSize();
-  pW = w; pH = h;
-  cW = pW * 2; cH = pH;
-  canvas.width  = cW;
-  canvas.height = cH;
+  const dpr = window.devicePixelRatio || 1;
+  pW = w; pH = h; cW = pW * 2; cH = pH;
+
+  // Physical pixels = CSS pixels × DPR  →  crisp on retina / mobile screens
+  canvas.width  = cW * dpr;
+  canvas.height = cH * dpr;
   canvas.style.width  = cW + 'px';
   canvas.style.height = cH + 'px';
+
+  // Scale context so all drawing code stays in CSS-pixel coordinates
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SPREAD HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Spread helpers ────────────────────────────────────────────────────────────
 const rightOf  = s => s + 1 < TOTAL ? s + 1 : null;
-const nextSprd = s => { const r = rightOf(s); return r !== null && r+1 < TOTAL ? r+1 : null; };
+const nextSprd = s => { const r = rightOf(s); return (r !== null && r + 1 < TOTAL) ? r + 1 : null; };
 const prevSprd = s => s === 0 ? null : Math.max(0, s - 2);
+const img      = i  => (i === null || i < 0 || i >= TOTAL) ? null : imgs[i];
 
-function img(i) {
-  if (i === null || i < 0 || i >= TOTAL) return null;
-  return imgs[i];
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CANVAS DRAWING
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Canvas drawing helpers ────────────────────────────────────────────────────
 function drawImg(im, x, y, w, h) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(x, y, w, h);
-  if (im) ctx.drawImage(im, x, y, w, h);
+  if (im && im.complete && im.naturalWidth) ctx.drawImage(im, x, y, w, h);
 }
 
 function drawSpine() {
@@ -306,54 +210,39 @@ function drawSpine() {
   ctx.fillRect(pW - 3, 0, 6, cH);
 }
 
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RENDER
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   ctx.clearRect(0, 0, cW, cH);
-
-  if (!animDir) {
-    renderStatic();
-  } else {
-    renderFlipFrame();
-  }
+  animDir ? renderFlipFrame() : renderStatic();
 }
 
 function renderStatic() {
-  drawImg(img(spread),       0,  0, pW, cH);
-  drawImg(img(spread + 1),   pW, 0, pW, cH);
+  drawImg(img(spread),     0,  0, pW, cH);
+  drawImg(img(spread + 1), pW, 0, pW, cH);
   drawSpine();
 }
 
 function renderFlipFrame() {
-  // Ease: cubic in-out
   const ease = animT < 0.5
-    ? 4*animT*animT*animT
-    : 1 - Math.pow(-2*animT+2,3)/2;
+    ? 4 * animT * animT * animT
+    : 1 - Math.pow(-2 * animT + 2, 3) / 2;
 
   if (animDir === 'next') {
     const nxt = nextSprd(spread);
     if (nxt === null) return;
 
-    // fold_x: the crease position, sweeps right edge → spine
-    // fx = cW at ease=0 (nothing folded), fx = pW at ease=1 (fully folded)
-    const fx = cW - pW * ease;
-
-    // Fold flap region: [max(2*fx - cW, 0), fx]
-    // = the portion of the right page that has folded over (reflected)
+    // fold_x: crease sweeps from right edge (cW) to spine (pW)
+    const fx   = cW - pW * ease;
     const flapL = Math.max(2 * fx - cW, 0);
     const flapR = Math.min(fx, cW);
 
-    // 1. Destination background (revealed as page peels away)
+    // 1. Destination spread (revealed underneath)
     drawImg(img(nxt),     0,  0, pW, cH);
     drawImg(img(nxt + 1), pW, 0, pW, cH);
 
-    // 2. Current LEFT page — visible only where flap hasn't covered it yet
-    //    Flap first touches left page when fx < 1.5*pW (flapL < pW)
+    // 2. Current left page — visible until the fold flap reaches it
     {
-      const visR = Math.min(flapL, pW); // right edge of visible left page
+      const visR = Math.min(flapL, pW);
       if (visR > 0) {
         ctx.save();
         ctx.beginPath(); ctx.rect(0, 0, visR, cH); ctx.clip();
@@ -362,60 +251,58 @@ function renderFlipFrame() {
       }
     }
 
-    // 3. Flat (unfolded) portion of the right page: [pW, fx]
+    // 3. Flat (unfolded) portion of the flipping right page: [pW, fx]
     if (fx > pW) {
       ctx.save();
       ctx.beginPath(); ctx.rect(pW, 0, fx - pW, cH); ctx.clip();
       drawImg(img(spread + 1), pW, 0, pW, cH);
-      // Soft shadow at crease
-      const g = ctx.createLinearGradient(fx, 0, fx - 22, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0.14)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      // Crease shadow at right edge of flat portion
+      const g = ctx.createLinearGradient(fx, 0, fx - 24, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(pW, 0, fx - pW, cH);
       ctx.restore();
     }
 
-    // 4. Fold flap — shows destination page compressed into flap width
-    //    At ease=1: flap fills [0, pW] at full width → seamlessly becomes img(nxt)
+    // 4. Fold flap — compressed destination page, grows from nothing to full left
     if (flapR > flapL) {
       ctx.save();
       ctx.beginPath(); ctx.rect(flapL, 0, flapR - flapL, cH); ctx.clip();
-      if (img(nxt)) ctx.drawImage(img(nxt), flapL, 0, flapR - flapL, cH);
+      const im = img(nxt);
+      if (im) ctx.drawImage(im, flapL, 0, flapR - flapL, cH);
       else { ctx.fillStyle = '#f5f0eb'; ctx.fillRect(flapL, 0, flapR - flapL, cH); }
-      // Shading: dark at right edge (crease), fades left
+      // Shading: darkest at crease (right), fades left
       const g = ctx.createLinearGradient(flapR, 0, flapL, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0.30)');
-      g.addColorStop(0.2, 'rgba(0,0,0,0.10)');
-      g.addColorStop(1,   'rgba(0,0,0,0)');
+      g.addColorStop(0,    'rgba(0,0,0,0.32)');
+      g.addColorStop(0.18, 'rgba(0,0,0,0.10)');
+      g.addColorStop(1,    'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(flapL, 0, flapR - flapL, cH);
       ctx.restore();
 
-      // Drop shadow cast left of flap
-      const sw = Math.min(36, flapL);
+      // Drop shadow to the left of flap
+      const sw = Math.min(38, flapL);
       if (sw > 0) {
         ctx.save();
         ctx.beginPath(); ctx.rect(flapL - sw, 0, sw, cH); ctx.clip();
         const s = ctx.createLinearGradient(flapL, 0, flapL - sw, 0);
-        s.addColorStop(0, 'rgba(0,0,0,0.20)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+        s.addColorStop(0, 'rgba(0,0,0,0.22)'); s.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = s; ctx.fillRect(flapL - sw, 0, sw, cH);
         ctx.restore();
       }
     }
 
-  } else { // prev: mirror image of next
+  } else { // prev — mirror logic
     const prv = prevSprd(spread);
     if (prv === null) return;
 
-    // fold_x sweeps left edge → spine: fx = pW * ease
-    const fx = pW * ease;
-
+    const fx    = pW * ease;
     const flapL = Math.max(fx, 0);
     const flapR = Math.min(2 * fx, cW);
 
-    // 1. Destination background
+    // 1. Destination spread
     drawImg(img(prv),     0,  0, pW, cH);
     drawImg(img(prv + 1), pW, 0, pW, cH);
 
-    // 2. Current RIGHT page — visible where flap hasn't covered yet
+    // 2. Current right page — visible until flap reaches it
     {
       const visL = Math.max(flapR, pW);
       if (visL < cW) {
@@ -426,13 +313,13 @@ function renderFlipFrame() {
       }
     }
 
-    // 3. Flat portion of left page: [fx, pW]
+    // 3. Flat (unfolded) portion of the left page: [fx, pW]
     if (fx < pW) {
       ctx.save();
       ctx.beginPath(); ctx.rect(fx, 0, pW - fx, cH); ctx.clip();
       drawImg(img(spread), 0, 0, pW, cH);
-      const g = ctx.createLinearGradient(fx, 0, fx + 22, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0.14)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      const g = ctx.createLinearGradient(fx, 0, fx + 24, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(fx, 0, pW - fx, cH);
       ctx.restore();
     }
@@ -441,21 +328,22 @@ function renderFlipFrame() {
     if (flapR > flapL) {
       ctx.save();
       ctx.beginPath(); ctx.rect(flapL, 0, flapR - flapL, cH); ctx.clip();
-      if (img(prv + 1)) ctx.drawImage(img(prv + 1), flapL, 0, flapR - flapL, cH);
+      const im = img(prv + 1);
+      if (im) ctx.drawImage(im, flapL, 0, flapR - flapL, cH);
       else { ctx.fillStyle = '#f5f0eb'; ctx.fillRect(flapL, 0, flapR - flapL, cH); }
       const g = ctx.createLinearGradient(flapL, 0, flapR, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0.30)');
-      g.addColorStop(0.2, 'rgba(0,0,0,0.10)');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
+      g.addColorStop(0,    'rgba(0,0,0,0.32)');
+      g.addColorStop(0.18, 'rgba(0,0,0,0.10)');
+      g.addColorStop(1,    'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(flapL, 0, flapR - flapL, cH);
       ctx.restore();
 
-      const sw = Math.min(36, cW - flapR);
+      const sw = Math.min(38, cW - flapR);
       if (sw > 0) {
         ctx.save();
         ctx.beginPath(); ctx.rect(flapR, 0, sw, cH); ctx.clip();
         const s = ctx.createLinearGradient(flapR, 0, flapR + sw, 0);
-        s.addColorStop(0, 'rgba(0,0,0,0.20)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+        s.addColorStop(0, 'rgba(0,0,0,0.22)'); s.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = s; ctx.fillRect(flapR, 0, sw, cH);
         ctx.restore();
       }
@@ -465,85 +353,60 @@ function renderFlipFrame() {
   drawSpine();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ANIMATION
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Animation ─────────────────────────────────────────────────────────────────
 function flip(dir) {
   if (animDir) return;
   if (dir === 'next' && nextSprd(spread) === null) return;
   if (dir === 'prev' && prevSprd(spread) === null) return;
-
-  animDir   = dir;
-  animT     = 0;
-  animStart = performance.now();
+  animDir = dir; animT = 0; animStart = performance.now();
   playPaper();
-
-  function step(now) {
+  (function step(now) {
     animT = Math.min((now - animStart) / FLIP_MS, 1);
     render();
-
     if (animT < 1) {
-      animRAF = requestAnimationFrame(step);
+      requestAnimationFrame(step);
     } else {
       spread  = dir === 'next' ? nextSprd(spread) : prevSprd(spread);
       animDir = null;
-      render();
-      updateUI();
+      render(); updateUI();
     }
-  }
-  animRAF = requestAnimationFrame(step);
+  })(animStart);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAPER SOUND  — soft single-layer swish, no crackle
-// ─────────────────────────────────────────────────────────────────────────────
-// Reuse a single Audio element for the flip sound
+// ── Sound ─────────────────────────────────────────────────────────────────────
 const flipAudio = new Audio('flip-ct-sm.mp3');
 flipAudio.volume = 0.8;
-
 function playPaper() {
   if (!soundOn) return;
-  try {
-    flipAudio.currentTime = 0;
-    flipAudio.play().catch(() => {});
-  } catch(e) {}
+  try { flipAudio.currentTime = 0; flipAudio.play().catch(() => {}); } catch(e) {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UI
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Zoom / pan ────────────────────────────────────────────────────────────────
+function setZoom(z) {
+  zoomLevel = Math.min(3, Math.max(0.5, z));
+  if (zoomLevel <= 1) { panX = 0; panY = 0; }
+  const wrap = document.getElementById('bookWrap');
+  wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+  document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
 function updateUI() {
   const r = rightOf(spread);
-  document.getElementById('pageNum').textContent = r !== null
-    ? `${spread+1}–${spread+2} / ${TOTAL}`
-    : `${spread+1} / ${TOTAL}`;
+  document.getElementById('pageNum').textContent =
+    r !== null ? `${spread+1}–${spread+2} / ${TOTAL}` : `${spread+1} / ${TOTAL}`;
   document.getElementById('btnPrev').disabled = prevSprd(spread) === null;
   document.getElementById('btnNext').disabled = nextSprd(spread) === null;
   updateThumbActive();
 }
 
-function applyZoom() {
-  const wrap = document.getElementById('bookWrap');
-  wrap.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-  document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
-}
-
-function setZoom(z) {
-  zoomLevel = Math.min(3, Math.max(0.5, z));
-  if (zoomLevel <= 1) { panX = 0; panY = 0; }
-  applyZoom();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// THUMBNAILS
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Thumbnails ────────────────────────────────────────────────────────────────
 function buildThumbs() {
   const panel = document.getElementById('thumbPanel');
   for (let i = 0; i < TOTAL; i++) {
-    const wrap  = document.createElement('div');
+    const wrap = document.createElement('div');
     const thumb = document.createElement('div');
-    thumb.className = 'thumb-item';
-    thumb.id = `t${i}`;
+    thumb.className = 'thumb-item'; thumb.id = `t${i}`;
     const im = document.createElement('img');
     im.src = pageSrc(i); im.loading = 'lazy';
     thumb.appendChild(im);
@@ -558,27 +421,23 @@ function buildThumbs() {
 function updateThumbActive() {
   document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
   const el = document.getElementById(`t${spread}`);
-  if (el) { el.classList.add('active'); el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 }
 
 function jumpTo(pageIdx) {
   if (animDir) return;
   spread = pageIdx === 0 ? 0 : (pageIdx % 2 === 1 ? pageIdx : pageIdx - 1);
-  render();
-  updateUI();
+  render(); updateUI();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EVENT WIRING
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Event wiring ──────────────────────────────────────────────────────────────
 document.getElementById('btnNext').addEventListener('click', () => flip('next'));
 document.getElementById('btnPrev').addEventListener('click', () => flip('prev'));
-
 document.getElementById('btnZoomIn') .addEventListener('click', () => setZoom(zoomLevel + 0.2));
 document.getElementById('btnZoomOut').addEventListener('click', () => setZoom(zoomLevel - 0.2));
 document.getElementById('zoomPct')   .addEventListener('click', () => setZoom(1));
 
-document.getElementById('btnSound').addEventListener('click', function() {
+document.getElementById('btnSound').addEventListener('click', function () {
   soundOn = !soundOn;
   this.classList.toggle('active', !soundOn);
   document.getElementById('soundIcon').innerHTML = soundOn
@@ -586,17 +445,15 @@ document.getElementById('btnSound').addEventListener('click', function() {
        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`
     : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-       <line x1="23" y1="9" x2="17" y2="15"/>
-       <line x1="17" y1="9" x2="23" y2="15"/>`;
+       <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`;
 });
 
-document.getElementById('btnThumbs').addEventListener('click', function() {
+document.getElementById('btnThumbs').addEventListener('click', function () {
   thumbsOpen = !thumbsOpen;
   document.getElementById('thumbPanel').classList.toggle('open', thumbsOpen);
   this.classList.toggle('active', thumbsOpen);
 });
 
-// Keyboard
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' || e.key === 'PageDown') flip('next');
   if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   flip('prev');
@@ -605,44 +462,14 @@ document.addEventListener('keydown', e => {
   if (e.key === '0') setZoom(1);
 });
 
-// Wheel zoom
 document.getElementById('stage').addEventListener('wheel', e => {
   e.preventDefault();
   setZoom(zoomLevel + (e.deltaY < 0 ? 0.1 : -0.1));
 }, { passive: false });
 
-// Pan drag
-const bw = document.getElementById('bookWrap');
-bw.addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  isDragging = true; dragSX = e.clientX; dragSY = e.clientY;
-  panSX = panX; panSY = panY;
-  bw.classList.add('dragging');
-});
-window.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  panX = panSX + (e.clientX - dragSX);
-  panY = panSY + (e.clientY - dragSY);
-  applyZoom();
-});
-window.addEventListener('mouseup', e => {
-  if (!isDragging) return;
-  isDragging = false;
-  bw.classList.remove('dragging');
-  // Tap (barely moved) → navigate
-  if (zoomLevel <= 1 && Math.abs(e.clientX-dragSX) + Math.abs(e.clientY-dragSY) < 5) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    if (x > cW * 0.6) flip('next');
-    else if (x < cW * 0.4) flip('prev');
-  }
-});
+window.addEventListener('resize', () => { applySize(); render(); });
 
-window.addEventListener('resize', () => { if (canvas) { applySize(); render(); } });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   canvas = document.getElementById('canvas');
   ctx    = canvas.getContext('2d');
@@ -650,35 +477,55 @@ function init() {
   buildThumbs();
   updateUI();
 
-  // Touch swipe (must be after canvas is defined)
-  let touchX0 = 0;
+  // Pan drag
+  const bw = document.getElementById('bookWrap');
+  bw.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    isDragging = true; dragSX = e.clientX; dragSY = e.clientY; panSX = panX; panSY = panY;
+    bw.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panX = panSX + (e.clientX - dragSX); panY = panSY + (e.clientY - dragSY);
+    const wrap = document.getElementById('bookWrap');
+    wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+  });
+  window.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false; bw.classList.remove('dragging');
+    if (zoomLevel <= 1 && Math.abs(e.clientX - dragSX) + Math.abs(e.clientY - dragSY) < 5) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > cW * 0.6) flip('next'); else if (x < cW * 0.4) flip('prev');
+    }
+  });
+
+  // Touch swipe + pinch
+  let touchX0 = 0, pinchD0 = 0;
   canvas.addEventListener('touchstart', e => {
     if (e.touches.length === 1) touchX0 = e.touches[0].clientX;
-  }, {passive:true});
-  canvas.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchX0;
-    if (Math.abs(dx) > 40) dx < 0 ? flip('next') : flip('prev');
-  }, {passive:true});
-
-  // Pinch zoom
-  let pinchD0 = 0;
-  canvas.addEventListener('touchstart', e => {
     if (e.touches.length === 2)
-      pinchD0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-  }, {passive:true});
+      pinchD0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                           e.touches[0].clientY - e.touches[1].clientY);
+  }, { passive: true });
+  canvas.addEventListener('touchend', e => {
+    if (e.changedTouches.length === 1 && zoomLevel <= 1) {
+      const dx = e.changedTouches[0].clientX - touchX0;
+      if (Math.abs(dx) > 40) dx < 0 ? flip('next') : flip('prev');
+    }
+  }, { passive: true });
   canvas.addEventListener('touchmove', e => {
     if (e.touches.length === 2) {
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                           e.touches[0].clientY - e.touches[1].clientY);
       if (pinchD0 > 0) setZoom(zoomLevel * (d / pinchD0));
-      pinchD0 = d;
-      e.preventDefault();
+      pinchD0 = d; e.preventDefault();
     }
-  }, {passive:false});
+  }, { passive: false });
 
-  // Load images; show flipbook once all are ready
+  // Load images
   const loadText = document.getElementById('loadText');
   let done = 0;
-
   for (let i = 0; i < TOTAL; i++) {
     const im = new Image();
     im.onload = im.onerror = () => {
