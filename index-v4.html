@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Języki Teatru – Niezbędnik Młodego Widza</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; background: #2c2420;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden; color: #fff; user-select: none; -webkit-user-select: none;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, #3a2e28 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, #1e1814 0%, transparent 60%);
+  pointer-events: none;
+}
+#stage {
+  position: fixed; inset: 0 0 72px 0;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+#bookWrap {
+  position: relative; transform-origin: center center;
+  transition: transform 0.12s ease-out; cursor: grab;
+}
+#bookWrap.dragging { cursor: grabbing; transition: none; }
+#bookShadow {
+  position: absolute; bottom: -18px; left: 6%; right: 6%;
+  height: 30px; background: rgba(0,0,0,0.5);
+  filter: blur(14px); border-radius: 50%; pointer-events: none;
+}
+#canvas { display: block; border-radius: 2px; box-shadow: 0 8px 40px rgba(0,0,0,0.55); }
+
+/* Toolbar */
+#toolbar {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1px;
+  background: rgba(18,14,12,0.92); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 40px;
+  padding: 4px 8px; z-index: 200; box-shadow: 0 4px 28px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+.tb-btn {
+  background: none; border: none; color: #aaa;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.1s, color 0.1s; flex-shrink: 0;
+}
+.tb-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.tb-btn:disabled { opacity: 0.25; cursor: default; }
+.tb-btn:disabled:hover { background: none; color: #aaa; }
+.tb-btn.active { color: #e8c97a; }
+.tb-sep { width: 1px; height: 18px; background: rgba(255,255,255,0.1); margin: 0 2px; }
+#pageNum { font-size: 12px; color: #888; min-width: 68px; text-align: center; letter-spacing: 0.03em; }
+#zoomPct { font-size: 12px; color: #888; min-width: 36px; text-align: center; cursor: pointer; }
+#zoomPct:hover { color: #fff; }
+.dl-btn {
+  display: flex; align-items: center; gap: 5px; color: #aaa; text-decoration: none;
+  font-size: 12px; padding: 0 10px; height: 36px; border-radius: 40px;
+  transition: background 0.1s, color 0.1s;
+}
+.dl-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+
+/* Loading */
+#loading {
+  position: fixed; inset: 0; background: #2c2420;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; gap: 14px; transition: opacity 0.5s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+.loader-ring {
+  width: 38px; height: 38px; border: 3px solid rgba(255,255,255,0.08);
+  border-top-color: #e8c97a; border-radius: 50%; animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loadText { font-size: 12px; color: #666; letter-spacing: 0.06em; }
+
+/* Thumbnail panel */
+#thumbPanel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 108px;
+  background: rgba(12,10,8,0.96); backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  overflow-y: auto; z-index: 150; padding: 10px 7px;
+  display: none; flex-direction: column; gap: 5px;
+  scrollbar-width: thin; scrollbar-color: #333 transparent;
+}
+#thumbPanel.open { display: flex; }
+.thumb-item {
+  cursor: pointer; border-radius: 2px; overflow: hidden;
+  border: 2px solid transparent; transition: border-color 0.12s; flex-shrink: 0;
+}
+.thumb-item.active { border-color: #e8c97a; }
+.thumb-item img { width: 100%; display: block; }
+.thumb-num { text-align: center; font-size: 10px; color: #444; padding: 2px 0; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader-ring"></div>
+  <div id="loadText">Ładowanie stron…</div>
+</div>
+
+<div id="stage">
+  <div id="bookWrap">
+    <div id="bookShadow"></div>
+    <canvas id="canvas"></canvas>
+  </div>
+</div>
+
+<div id="thumbPanel"></div>
+
+<div id="toolbar">
+  <button class="tb-btn" id="btnPrev" title="Poprzednia (←)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <span id="pageNum">1 / 26</span>
+  <button class="tb-btn" id="btnNext" title="Następna (→)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnZoomOut" title="-">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <span id="zoomPct" title="Reset zoom">100%</span>
+  <button class="tb-btn" id="btnZoomIn" title="+">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnSound" title="Dźwięk">
+    <svg id="soundIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnThumbs" title="Miniatury">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+  <a class="dl-btn" href="Jezyki teatru. Niezbednik Mlodego Widza.pdf" download>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    PDF
+  </a>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const TOTAL   = 26;
+const ASPECT  = 957 / 1388;
+const FLIP_MS = 650;
+const pageSrc = i => `pages/page-${String(i+1).padStart(2,'0')}.png`;
+const imgs    = Array(TOTAL).fill(null);
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let spread = 0;
+let animDir = null, animT = 0, animStart = 0;
+let soundOn = true, thumbsOpen = false;
+let zoomLevel = 1, panX = 0, panY = 0;
+let isDragging = false, dragSX, dragSY, panSX, panSY;
+let canvas, ctx, cW, cH, pW, pH;
+
+// ── Sizing — key fix: multiply canvas pixels by devicePixelRatio ──────────────
+function calcSize() {
+  const vw = window.innerWidth, vh = window.innerHeight - 48;
+  let h = Math.min(vh - 6, 1200);
+  let w = Math.round(h * ASPECT);
+  if (w * 2 + 6 > vw - 8) { w = Math.floor((vw - 14) / 2); h = Math.round(w / ASPECT); }
+  return { w, h };
+}
+
+function applySize() {
+  const { w, h } = calcSize();
+  const dpr = window.devicePixelRatio || 1;
+  pW = w; pH = h; cW = pW * 2; cH = pH;
+
+  // Physical pixels = CSS pixels × DPR  →  crisp on retina / mobile screens
+  canvas.width  = cW * dpr;
+  canvas.height = cH * dpr;
+  canvas.style.width  = cW + 'px';
+  canvas.style.height = cH + 'px';
+
+  // Scale context so all drawing code stays in CSS-pixel coordinates
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+// ── Spread helpers ────────────────────────────────────────────────────────────
+const rightOf  = s => s + 1 < TOTAL ? s + 1 : null;
+const nextSprd = s => { const r = rightOf(s); return (r !== null && r + 1 < TOTAL) ? r + 1 : null; };
+const prevSprd = s => s === 0 ? null : Math.max(0, s - 2);
+const img      = i  => (i === null || i < 0 || i >= TOTAL) ? null : imgs[i];
+
+// ── Canvas drawing helpers ────────────────────────────────────────────────────
+function drawImg(im, x, y, w, h) {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x, y, w, h);
+  if (im && im.complete && im.naturalWidth) ctx.drawImage(im, x, y, w, h);
+}
+
+function drawSpine() {
+  const g = ctx.createLinearGradient(pW - 3, 0, pW + 3, 0);
+  g.addColorStop(0,   'rgba(0,0,0,0.12)');
+  g.addColorStop(0.4, 'rgba(190,170,150,0.7)');
+  g.addColorStop(0.6, 'rgba(190,170,150,0.7)');
+  g.addColorStop(1,   'rgba(0,0,0,0.10)');
+  ctx.fillStyle = g;
+  ctx.fillRect(pW - 3, 0, 6, cH);
+}
+
+function clampPan() {
+  if (zoomLevel <= 1) { panX = 0; panY = 0; return; }
+  panX = Math.max(cW * (1 - zoomLevel), Math.min(0, panX));
+  panY = Math.max(cH * (1 - zoomLevel), Math.min(0, panY));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cW, cH);
+  // Apply zoom/pan in canvas space — sharp at any zoom level
+  ctx.setTransform(dpr * zoomLevel, 0, 0, dpr * zoomLevel, panX * dpr, panY * dpr);
+  animDir ? renderFlipFrame() : renderStatic();
+  // Restore for future non-zoomed ops
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function renderStatic() {
+  drawImg(img(spread),     0,  0, pW, cH);
+  drawImg(img(spread + 1), pW, 0, pW, cH);
+  drawSpine();
+}
+
+function renderFlipFrame() {
+  const ease = animT < 0.5
+    ? 4 * animT * animT * animT
+    : 1 - Math.pow(-2 * animT + 2, 3) / 2;
+
+  if (animDir === 'next') {
+    const nxt = nextSprd(spread);
+    if (nxt === null) return;
+
+    // fold_x: crease sweeps from right edge (cW) to spine (pW)
+    const fx   = cW - pW * ease;
+    const flapL = Math.max(2 * fx - cW, 0);
+    const flapR = Math.min(fx, cW);
+
+    // 1. Destination spread (revealed underneath)
+    drawImg(img(nxt),     0,  0, pW, cH);
+    drawImg(img(nxt + 1), pW, 0, pW, cH);
+
+    // 2. Current left page — visible until the fold flap reaches it
+    {
+      const visR = Math.min(flapL, pW);
+      if (visR > 0) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, 0, visR, cH); ctx.clip();
+        drawImg(img(spread), 0, 0, pW, cH);
+        ctx.restore();
+      }
+    }
+
+    // 3. Flat (unfolded) portion of the flipping right page: [pW, fx]
+    if (fx > pW) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(pW, 0, fx - pW, cH); ctx.clip();
+      drawImg(img(spread + 1), pW, 0, pW, cH);
+      // Crease shadow at right edge of flat portion
+      const g = ctx.createLinearGradient(fx, 0, fx - 24, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(pW, 0, fx - pW, cH);
+      ctx.restore();
+    }
+
+    // 4. Fold flap — compressed destination page, grows from nothing to full left
+    if (flapR > flapL) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(flapL, 0, flapR - flapL, cH); ctx.clip();
+      const im = img(nxt);
+      if (im) ctx.drawImage(im, flapL, 0, flapR - flapL, cH);
+      else { ctx.fillStyle = '#f5f0eb'; ctx.fillRect(flapL, 0, flapR - flapL, cH); }
+      // Shading: darkest at crease (right), fades left
+      const g = ctx.createLinearGradient(flapR, 0, flapL, 0);
+      g.addColorStop(0,    'rgba(0,0,0,0.32)');
+      g.addColorStop(0.18, 'rgba(0,0,0,0.10)');
+      g.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(flapL, 0, flapR - flapL, cH);
+      ctx.restore();
+
+      // Drop shadow to the left of flap
+      const sw = Math.min(38, flapL);
+      if (sw > 0) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(flapL - sw, 0, sw, cH); ctx.clip();
+        const s = ctx.createLinearGradient(flapL, 0, flapL - sw, 0);
+        s.addColorStop(0, 'rgba(0,0,0,0.22)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = s; ctx.fillRect(flapL - sw, 0, sw, cH);
+        ctx.restore();
+      }
+    }
+
+  } else { // prev — mirror logic
+    const prv = prevSprd(spread);
+    if (prv === null) return;
+
+    const fx    = pW * ease;
+    const flapL = Math.max(fx, 0);
+    const flapR = Math.min(2 * fx, cW);
+
+    // 1. Destination spread
+    drawImg(img(prv),     0,  0, pW, cH);
+    drawImg(img(prv + 1), pW, 0, pW, cH);
+
+    // 2. Current right page — visible until flap reaches it
+    {
+      const visL = Math.max(flapR, pW);
+      if (visL < cW) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(visL, 0, cW - visL, cH); ctx.clip();
+        drawImg(img(spread + 1), pW, 0, pW, cH);
+        ctx.restore();
+      }
+    }
+
+    // 3. Flat (unfolded) portion of the left page: [fx, pW]
+    if (fx < pW) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(fx, 0, pW - fx, cH); ctx.clip();
+      drawImg(img(spread), 0, 0, pW, cH);
+      const g = ctx.createLinearGradient(fx, 0, fx + 24, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(fx, 0, pW - fx, cH);
+      ctx.restore();
+    }
+
+    // 4. Fold flap
+    if (flapR > flapL) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(flapL, 0, flapR - flapL, cH); ctx.clip();
+      const im = img(prv + 1);
+      if (im) ctx.drawImage(im, flapL, 0, flapR - flapL, cH);
+      else { ctx.fillStyle = '#f5f0eb'; ctx.fillRect(flapL, 0, flapR - flapL, cH); }
+      const g = ctx.createLinearGradient(flapL, 0, flapR, 0);
+      g.addColorStop(0,    'rgba(0,0,0,0.32)');
+      g.addColorStop(0.18, 'rgba(0,0,0,0.10)');
+      g.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(flapL, 0, flapR - flapL, cH);
+      ctx.restore();
+
+      const sw = Math.min(38, cW - flapR);
+      if (sw > 0) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(flapR, 0, sw, cH); ctx.clip();
+        const s = ctx.createLinearGradient(flapR, 0, flapR + sw, 0);
+        s.addColorStop(0, 'rgba(0,0,0,0.22)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = s; ctx.fillRect(flapR, 0, sw, cH);
+        ctx.restore();
+      }
+    }
+  }
+
+  drawSpine();
+}
+
+// ── Animation ─────────────────────────────────────────────────────────────────
+function flip(dir) {
+  if (animDir) return;
+  if (dir === 'next' && nextSprd(spread) === null) return;
+  if (dir === 'prev' && prevSprd(spread) === null) return;
+  animDir = dir; animT = 0; animStart = performance.now();
+  playPaper();
+  (function step(now) {
+    animT = Math.min((now - animStart) / FLIP_MS, 1);
+    render();
+    if (animT < 1) {
+      requestAnimationFrame(step);
+    } else {
+      spread  = dir === 'next' ? nextSprd(spread) : prevSprd(spread);
+      animDir = null;
+      render(); updateUI();
+    }
+  })(animStart);
+}
+
+// ── Sound ─────────────────────────────────────────────────────────────────────
+const flipAudio = new Audio('flip-ct-sm.mp3');
+flipAudio.volume = 0.8;
+function playPaper() {
+  if (!soundOn) return;
+  try { flipAudio.currentTime = 0; flipAudio.play().catch(() => {}); } catch(e) {}
+}
+
+// ── Zoom / pan ────────────────────────────────────────────────────────────────
+// cx, cy = canvas-space focal point (CSS px). When omitted, zooms from centre.
+function setZoom(z, cx, cy) {
+  const oldZ = zoomLevel;
+  zoomLevel = Math.min(4, Math.max(1, z));
+  if (cx !== undefined) {
+    // Keep the focal point fixed: adjust pan so (cx,cy) maps to same place
+    panX = cx - (cx - panX) * (zoomLevel / oldZ);
+    panY = cy - (cy - panY) * (zoomLevel / oldZ);
+  }
+  clampPan();
+  render();
+  document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+  // Clear any leftover CSS transform on the book wrapper
+  document.getElementById('bookWrap').style.transform = '';
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+function updateUI() {
+  const r = rightOf(spread);
+  document.getElementById('pageNum').textContent =
+    r !== null ? `${spread+1}–${spread+2} / ${TOTAL}` : `${spread+1} / ${TOTAL}`;
+  document.getElementById('btnPrev').disabled = prevSprd(spread) === null;
+  document.getElementById('btnNext').disabled = nextSprd(spread) === null;
+  updateThumbActive();
+}
+
+// ── Thumbnails ────────────────────────────────────────────────────────────────
+function buildThumbs() {
+  const panel = document.getElementById('thumbPanel');
+  for (let i = 0; i < TOTAL; i++) {
+    const wrap = document.createElement('div');
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb-item'; thumb.id = `t${i}`;
+    const im = document.createElement('img');
+    im.src = pageSrc(i); im.loading = 'lazy';
+    thumb.appendChild(im);
+    thumb.addEventListener('click', () => jumpTo(i));
+    const num = document.createElement('div');
+    num.className = 'thumb-num'; num.textContent = i + 1;
+    wrap.appendChild(thumb); wrap.appendChild(num);
+    panel.appendChild(wrap);
+  }
+}
+
+function updateThumbActive() {
+  document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`t${spread}`);
+  if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+}
+
+function jumpTo(pageIdx) {
+  if (animDir) return;
+  spread = pageIdx === 0 ? 0 : (pageIdx % 2 === 1 ? pageIdx : pageIdx - 1);
+  render(); updateUI();
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────────
+document.getElementById('btnNext').addEventListener('click', () => flip('next'));
+document.getElementById('btnPrev').addEventListener('click', () => flip('prev'));
+document.getElementById('btnZoomIn') .addEventListener('click', () => setZoom(zoomLevel + 0.2));
+document.getElementById('btnZoomOut').addEventListener('click', () => setZoom(zoomLevel - 0.2));
+document.getElementById('zoomPct')   .addEventListener('click', () => setZoom(1));
+
+document.getElementById('btnSound').addEventListener('click', function () {
+  soundOn = !soundOn;
+  this.classList.toggle('active', !soundOn);
+  document.getElementById('soundIcon').innerHTML = soundOn
+    ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+       <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+       <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>`
+    : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+       <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`;
+});
+
+document.getElementById('btnThumbs').addEventListener('click', function () {
+  thumbsOpen = !thumbsOpen;
+  document.getElementById('thumbPanel').classList.toggle('open', thumbsOpen);
+  this.classList.toggle('active', thumbsOpen);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') flip('next');
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   flip('prev');
+  if (e.key === '+' || e.key === '=') setZoom(zoomLevel + 0.2);
+  if (e.key === '-') setZoom(zoomLevel - 0.2);
+  if (e.key === '0') setZoom(1);
+});
+
+document.getElementById('stage').addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) / zoomLevel - panX / zoomLevel;
+  const cy = (e.clientY - rect.top)  / zoomLevel - panY / zoomLevel;
+  setZoom(zoomLevel * (e.deltaY < 0 ? 1.1 : 0.9), cx * zoomLevel, cy * zoomLevel);
+}, { passive: false });
+
+window.addEventListener('resize', () => { applySize(); render(); });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  canvas = document.getElementById('canvas');
+  ctx    = canvas.getContext('2d');
+  applySize();
+  buildThumbs();
+  updateUI();
+
+  // Pan drag
+  const bw = document.getElementById('bookWrap');
+  bw.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    isDragging = true; dragSX = e.clientX; dragSY = e.clientY; panSX = panX; panSY = panY;
+    bw.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panX = panSX + (e.clientX - dragSX); panY = panSY + (e.clientY - dragSY);
+    clampPan();
+    render();
+  });
+  window.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false; bw.classList.remove('dragging');
+    if (zoomLevel <= 1 && Math.abs(e.clientX - dragSX) + Math.abs(e.clientY - dragSY) < 5) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > cW * 0.6) flip('next'); else if (x < cW * 0.4) flip('prev');
+    }
+  });
+
+  // Touch: pinch-to-zoom + pan when zoomed + swipe to flip when at 1×
+  const bwEl = document.getElementById('bookWrap');
+  let t0x = 0, t0y = 0, panSXT = 0, panSYT = 0;
+  let pinchD0 = 0, pinchMidX = 0, pinchMidY = 0, pinchZ0 = 1;
+  let touchMoved = false;
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      t0x = e.touches[0].clientX;
+      t0y = e.touches[0].clientY;
+      panSXT = panX; panSYT = panY;
+      touchMoved = false;
+    }
+    if (e.touches.length === 2) {
+      const a = e.touches[0], b = e.touches[1];
+      pinchD0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      pinchMidX = (a.clientX + b.clientX) / 2;
+      pinchMidY = (a.clientY + b.clientY) / 2;
+      pinchZ0 = zoomLevel;
+      panSXT = panX; panSYT = panY;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const a = e.touches[0], b = e.touches[1];
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if (pinchD0 > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (a.clientX + b.clientX) / 2 - rect.left;
+        const my = (a.clientY + b.clientY) / 2 - rect.top;
+        // Focal point in content coords
+        const focalX = (mx - panX) / pinchZ0;
+        const focalY = (my - panY) / pinchZ0;
+        const newZ = Math.min(4, Math.max(1, pinchZ0 * (d / pinchD0)));
+        zoomLevel = newZ;
+        panX = mx - focalX * newZ;
+        panY = my - focalY * newZ;
+        clampPan();
+        render();
+        document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+      }
+    } else if (e.touches.length === 1 && zoomLevel > 1) {
+      touchMoved = true;
+      panX = panSXT + (e.touches[0].clientX - t0x);
+      panY = panSYT + (e.touches[0].clientY - t0y);
+      clampPan();
+      render();
+    } else if (e.touches.length === 1) {
+      if (Math.abs(e.touches[0].clientX - t0x) > 8) touchMoved = true;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    if (e.touches.length < 2) {
+      pinchD0 = 0; pinchZ0 = zoomLevel;
+      panSXT = panX; panSYT = panY;
+    }
+    if (e.changedTouches.length === 1 && zoomLevel <= 1 && !touchMoved) {
+      const dx = e.changedTouches[0].clientX - t0x;
+      if (Math.abs(dx) > 40) dx < 0 ? flip('next') : flip('prev');
+    }
+  }, { passive: true });
+
+  // Load images
+  const loadText = document.getElementById('loadText');
+  let done = 0;
+  for (let i = 0; i < TOTAL; i++) {
+    const im = new Image();
+    im.onload = im.onerror = () => {
+      done++;
+      loadText.textContent = `Ładowanie… ${done} / ${TOTAL}`;
+      if (done === TOTAL) {
+        document.getElementById('loading').classList.add('hidden');
+        render();
+      }
+    };
+    im.src = pageSrc(i);
+    imgs[i] = im;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
