@@ -501,9 +501,15 @@ function init() {
   });
 
   // Touch: pinch-to-zoom + pan when zoomed + swipe to flip when at 1×
+  const bwEl = document.getElementById('bookWrap');
   let t0x = 0, t0y = 0, panSXT = 0, panSYT = 0;
   let pinchD0 = 0, pinchMidX = 0, pinchMidY = 0, pinchZ0 = 1;
   let touchMoved = false;
+
+  function applyTransform() {
+    bwEl.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+    document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+  }
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
@@ -519,45 +525,43 @@ function init() {
       pinchMidX = (a.clientX + b.clientX) / 2;
       pinchMidY = (a.clientY + b.clientY) / 2;
       pinchZ0 = zoomLevel;
+      panSXT = panX; panSYT = panY;
     }
   }, { passive: false });
 
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     if (e.touches.length === 2) {
-      // Pinch zoom centred on midpoint
       const a = e.touches[0], b = e.touches[1];
       const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       if (pinchD0 > 0) {
-        const newZ = Math.min(4, Math.max(0.5, pinchZ0 * (d / pinchD0)));
+        const newZ = Math.min(4, Math.max(1, pinchZ0 * (d / pinchD0)));
         const mx = (a.clientX + b.clientX) / 2;
         const my = (a.clientY + b.clientY) / 2;
-        // Adjust pan so the midpoint stays under fingers
-        panX = mx - (pinchMidX - panSXT) * (newZ / pinchZ0);
-        panY = my - (pinchMidY - panSYT) * (newZ / pinchZ0);
+        panX = panSXT + (mx - pinchMidX) + (pinchMidX - panSXT) * (1 - newZ / pinchZ0);
+        panY = panSYT + (my - pinchMidY) + (pinchMidY - panSYT) * (1 - newZ / pinchZ0);
         zoomLevel = newZ;
-        if (zoomLevel <= 1) { panX = 0; panY = 0; }
-        wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
-        document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+        applyTransform();
       }
     } else if (e.touches.length === 1 && zoomLevel > 1) {
-      // Single-finger pan when zoomed in
       touchMoved = true;
       panX = panSXT + (e.touches[0].clientX - t0x);
       panY = panSYT + (e.touches[0].clientY - t0y);
-      wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+      applyTransform();
     } else if (e.touches.length === 1) {
-      if (Math.abs(e.touches[0].clientX - t0x) > 5) touchMoved = true;
+      if (Math.abs(e.touches[0].clientX - t0x) > 8) touchMoved = true;
     }
   }, { passive: false });
 
   canvas.addEventListener('touchend', e => {
+    if (e.touches.length < 2) {
+      pinchD0 = 0; pinchZ0 = zoomLevel;
+      panSXT = panX; panSYT = panY;
+    }
     if (e.changedTouches.length === 1 && zoomLevel <= 1 && !touchMoved) {
       const dx = e.changedTouches[0].clientX - t0x;
       if (Math.abs(dx) > 40) dx < 0 ? flip('next') : flip('prev');
     }
-    // Reset pinch on finger lift
-    if (e.touches.length < 2) { pinchD0 = 0; pinchZ0 = zoomLevel; panSXT = panX; panSYT = panY; }
   }, { passive: true });
 
   // Load images
