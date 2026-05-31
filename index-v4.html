@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Języki Teatru – Niezbędnik Młodego Widza</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -10,7 +10,6 @@ html, body {
   height: 100%; background: #2c2420;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden; color: #fff; user-select: none; -webkit-user-select: none;
-  overscroll-behavior: none; -webkit-touch-callout: none;
 }
 body::before {
   content: ''; position: fixed; inset: 0;
@@ -21,7 +20,6 @@ body::before {
 #stage {
   position: fixed; inset: 0 0 72px 0;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
-  touch-action: none;
 }
 #bookWrap {
   position: relative; transform-origin: center center;
@@ -33,7 +31,7 @@ body::before {
   height: 30px; background: rgba(0,0,0,0.5);
   filter: blur(14px); border-radius: 50%; pointer-events: none;
 }
-#canvas { display: block; border-radius: 2px; box-shadow: 0 8px 40px rgba(0,0,0,0.55); touch-action: none; }
+#canvas { display: block; border-radius: 2px; box-shadow: 0 8px 40px rgba(0,0,0,0.55); }
 
 /* Toolbar */
 #toolbar {
@@ -159,8 +157,6 @@ const imgs    = Array(TOTAL).fill(null);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let spread = 0;
-let cur = 0;            // current page index (single-page / mobile mode)
-let singleMode = false; // one page at a time on narrow / portrait screens
 let animDir = null, animT = 0, animStart = 0;
 let soundOn = true, thumbsOpen = false;
 let zoomLevel = 1, panX = 0, panY = 0;
@@ -168,21 +164,8 @@ let isDragging = false, dragSX, dragSY, panSX, panSY;
 let canvas, ctx, cW, cH, pW, pH;
 
 // ── Sizing — key fix: multiply canvas pixels by devicePixelRatio ──────────────
-// Single-page mode when the screen is portrait & narrow (phones), so each page
-// fills the width instead of being shrunk to fit a wide two-page spread.
-function computeMode() {
-  return window.innerWidth < 820 && window.innerWidth < window.innerHeight;
-}
-
 function calcSize() {
   const vw = window.innerWidth, vh = window.innerHeight - 48;
-  if (singleMode) {
-    // One page: use the full available width, capped by height.
-    let w = vw - 8;
-    let h = Math.round(w / ASPECT);
-    if (h > vh - 6) { h = vh - 6; w = Math.round(h * ASPECT); }
-    return { w, h };
-  }
   let h = Math.min(vh - 6, 1200);
   let w = Math.round(h * ASPECT);
   if (w * 2 + 6 > vw - 8) { w = Math.floor((vw - 14) / 2); h = Math.round(w / ASPECT); }
@@ -192,7 +175,7 @@ function calcSize() {
 function applySize() {
   const { w, h } = calcSize();
   const dpr = window.devicePixelRatio || 1;
-  pW = w; pH = h; cW = singleMode ? pW : pW * 2; cH = pH;
+  pW = w; pH = h; cW = pW * 2; cH = pH;
 
   // Physical pixels = CSS pixels × DPR  →  crisp on retina / mobile screens
   canvas.width  = cW * dpr;
@@ -240,35 +223,9 @@ function render() {
   ctx.clearRect(0, 0, cW, cH);
   // Apply zoom/pan in canvas space — sharp at any zoom level
   ctx.setTransform(dpr * zoomLevel, 0, 0, dpr * zoomLevel, panX * dpr, panY * dpr);
-  if (singleMode) {
-    animDir ? renderSingleFlip() : drawImg(img(cur), 0, 0, pW, cH);
-  } else {
-    animDir ? renderFlipFrame() : renderStatic();
-  }
+  animDir ? renderFlipFrame() : renderStatic();
   // Restore for future non-zoomed ops
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-// Single-page slide flip
-function renderSingleFlip() {
-  const ease = animT < 0.5
-    ? 4 * animT * animT * animT
-    : 1 - Math.pow(-2 * animT + 2, 3) / 2;
-  const target = animDir === 'next' ? cur + 1 : cur - 1;
-  if (target < 0 || target >= TOTAL) { drawImg(img(cur), 0, 0, pW, cH); return; }
-  const sign = animDir === 'next' ? -1 : 1;     // current page slides this way
-  const offset = pW * ease * sign;
-  // Incoming page enters from the opposite side
-  drawImg(img(target), offset - sign * pW, 0, pW, cH);
-  // Outgoing page on top
-  drawImg(img(cur), offset, 0, pW, cH);
-  // Soft shadow along the leading edge of the moving page
-  const edge = animDir === 'next' ? offset : offset + pW;
-  const dir2 = animDir === 'next' ? 1 : -1;
-  const g = ctx.createLinearGradient(edge, 0, edge + dir2 * 26, 0);
-  g.addColorStop(0, 'rgba(0,0,0,0.22)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(animDir === 'next' ? edge : edge - 26, 0, 26, cH);
 }
 
 function renderStatic() {
@@ -411,13 +368,8 @@ function renderFlipFrame() {
 // ── Animation ─────────────────────────────────────────────────────────────────
 function flip(dir) {
   if (animDir) return;
-  if (singleMode) {
-    if (dir === 'next' && cur + 1 >= TOTAL) return;
-    if (dir === 'prev' && cur - 1 < 0) return;
-  } else {
-    if (dir === 'next' && nextSprd(spread) === null) return;
-    if (dir === 'prev' && prevSprd(spread) === null) return;
-  }
+  if (dir === 'next' && nextSprd(spread) === null) return;
+  if (dir === 'prev' && prevSprd(spread) === null) return;
   animDir = dir; animT = 0; animStart = performance.now();
   playPaper();
   (function step(now) {
@@ -426,8 +378,7 @@ function flip(dir) {
     if (animT < 1) {
       requestAnimationFrame(step);
     } else {
-      if (singleMode) cur = dir === 'next' ? cur + 1 : cur - 1;
-      else spread = dir === 'next' ? nextSprd(spread) : prevSprd(spread);
+      spread  = dir === 'next' ? nextSprd(spread) : prevSprd(spread);
       animDir = null;
       render(); updateUI();
     }
@@ -461,17 +412,11 @@ function setZoom(z, cx, cy) {
 
 // ── UI ────────────────────────────────────────────────────────────────────────
 function updateUI() {
-  if (singleMode) {
-    document.getElementById('pageNum').textContent = `${cur+1} / ${TOTAL}`;
-    document.getElementById('btnPrev').disabled = cur <= 0;
-    document.getElementById('btnNext').disabled = cur >= TOTAL - 1;
-  } else {
-    const r = rightOf(spread);
-    document.getElementById('pageNum').textContent =
-      r !== null ? `${spread+1}–${spread+2} / ${TOTAL}` : `${spread+1} / ${TOTAL}`;
-    document.getElementById('btnPrev').disabled = prevSprd(spread) === null;
-    document.getElementById('btnNext').disabled = nextSprd(spread) === null;
-  }
+  const r = rightOf(spread);
+  document.getElementById('pageNum').textContent =
+    r !== null ? `${spread+1}–${spread+2} / ${TOTAL}` : `${spread+1} / ${TOTAL}`;
+  document.getElementById('btnPrev').disabled = prevSprd(spread) === null;
+  document.getElementById('btnNext').disabled = nextSprd(spread) === null;
   updateThumbActive();
 }
 
@@ -495,14 +440,13 @@ function buildThumbs() {
 
 function updateThumbActive() {
   document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById(`t${singleMode ? cur : spread}`);
+  const el = document.getElementById(`t${spread}`);
   if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 }
 
 function jumpTo(pageIdx) {
   if (animDir) return;
-  if (singleMode) cur = pageIdx;
-  else spread = pageIdx === 0 ? 0 : (pageIdx % 2 === 1 ? pageIdx : pageIdx - 1);
+  spread = pageIdx === 0 ? 0 : (pageIdx % 2 === 1 ? pageIdx : pageIdx - 1);
   render(); updateUI();
 }
 
@@ -546,21 +490,12 @@ document.getElementById('stage').addEventListener('wheel', e => {
   setZoom(zoomLevel * (e.deltaY < 0 ? 1.1 : 0.9), cx * zoomLevel, cy * zoomLevel);
 }, { passive: false });
 
-window.addEventListener('resize', () => {
-  const was = singleMode;
-  singleMode = computeMode();
-  if (singleMode && !was) cur = spread;             // entering single mode
-  if (!singleMode && was) spread = cur - (cur % 2); // leaving single mode → align to spread
-  setZoom(1);                                       // reset zoom on layout change
-  applySize(); render(); updateUI();
-});
+window.addEventListener('resize', () => { applySize(); render(); });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   canvas = document.getElementById('canvas');
   ctx    = canvas.getContext('2d');
-  singleMode = computeMode();
-  cur = spread;
   applySize();
   buildThumbs();
   updateUI();
