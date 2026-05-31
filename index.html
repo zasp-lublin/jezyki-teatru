@@ -210,10 +210,22 @@ function drawSpine() {
   ctx.fillRect(pW - 3, 0, 6, cH);
 }
 
+function clampPan() {
+  if (zoomLevel <= 1) { panX = 0; panY = 0; return; }
+  panX = Math.max(cW * (1 - zoomLevel), Math.min(0, panX));
+  panY = Math.max(cH * (1 - zoomLevel), Math.min(0, panY));
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 function render() {
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cW, cH);
+  // Apply zoom/pan in canvas space — sharp at any zoom level
+  ctx.setTransform(dpr * zoomLevel, 0, 0, dpr * zoomLevel, panX * dpr, panY * dpr);
   animDir ? renderFlipFrame() : renderStatic();
+  // Restore for future non-zoomed ops
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 function renderStatic() {
@@ -382,12 +394,20 @@ function playPaper() {
 }
 
 // ── Zoom / pan ────────────────────────────────────────────────────────────────
-function setZoom(z) {
-  zoomLevel = Math.min(3, Math.max(0.5, z));
-  if (zoomLevel <= 1) { panX = 0; panY = 0; }
-  const wrap = document.getElementById('bookWrap');
-  wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+// cx, cy = canvas-space focal point (CSS px). When omitted, zooms from centre.
+function setZoom(z, cx, cy) {
+  const oldZ = zoomLevel;
+  zoomLevel = Math.min(4, Math.max(1, z));
+  if (cx !== undefined) {
+    // Keep the focal point fixed: adjust pan so (cx,cy) maps to same place
+    panX = cx - (cx - panX) * (zoomLevel / oldZ);
+    panY = cy - (cy - panY) * (zoomLevel / oldZ);
+  }
+  clampPan();
+  render();
   document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
+  // Clear any leftover CSS transform on the book wrapper
+  document.getElementById('bookWrap').style.transform = '';
 }
 
 // ── UI ────────────────────────────────────────────────────────────────────────
@@ -464,7 +484,10 @@ document.addEventListener('keydown', e => {
 
 document.getElementById('stage').addEventListener('wheel', e => {
   e.preventDefault();
-  setZoom(zoomLevel + (e.deltaY < 0 ? 0.1 : -0.1));
+  const rect = canvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) / zoomLevel - panX / zoomLevel;
+  const cy = (e.clientY - rect.top)  / zoomLevel - panY / zoomLevel;
+  setZoom(zoomLevel * (e.deltaY < 0 ? 1.1 : 0.9), cx * zoomLevel, cy * zoomLevel);
 }, { passive: false });
 
 window.addEventListener('resize', () => { applySize(); render(); });
@@ -487,8 +510,8 @@ function init() {
   window.addEventListener('mousemove', e => {
     if (!isDragging) return;
     panX = panSX + (e.clientX - dragSX); panY = panSY + (e.clientY - dragSY);
-    const wrap = document.getElementById('bookWrap');
-    wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
+    clampPan();
+    render();
   });
   window.addEventListener('mouseup', e => {
     if (!isDragging) return;
@@ -505,11 +528,6 @@ function init() {
   let t0x = 0, t0y = 0, panSXT = 0, panSYT = 0;
   let pinchD0 = 0, pinchMidX = 0, pinchMidY = 0, pinchZ0 = 1;
   let touchMoved = false;
-
-  function applyTransform() {
-    bwEl.style.transform = `translate(${panX}px,${panY}px) scale(${zoomLevel})`;
-    document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
-  }
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
@@ -535,19 +553,26 @@ function init() {
       const a = e.touches[0], b = e.touches[1];
       const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       if (pinchD0 > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (a.clientX + b.clientX) / 2 - rect.left;
+        const my = (a.clientY + b.clientY) / 2 - rect.top;
+        // Focal point in content coords
+        const focalX = (mx - panX) / pinchZ0;
+        const focalY = (my - panY) / pinchZ0;
         const newZ = Math.min(4, Math.max(1, pinchZ0 * (d / pinchD0)));
-        const mx = (a.clientX + b.clientX) / 2;
-        const my = (a.clientY + b.clientY) / 2;
-        panX = panSXT + (mx - pinchMidX) + (pinchMidX - panSXT) * (1 - newZ / pinchZ0);
-        panY = panSYT + (my - pinchMidY) + (pinchMidY - panSYT) * (1 - newZ / pinchZ0);
         zoomLevel = newZ;
-        applyTransform();
+        panX = mx - focalX * newZ;
+        panY = my - focalY * newZ;
+        clampPan();
+        render();
+        document.getElementById('zoomPct').textContent = Math.round(zoomLevel * 100) + '%';
       }
     } else if (e.touches.length === 1 && zoomLevel > 1) {
       touchMoved = true;
       panX = panSXT + (e.touches[0].clientX - t0x);
       panY = panSYT + (e.touches[0].clientY - t0y);
-      applyTransform();
+      clampPan();
+      render();
     } else if (e.touches.length === 1) {
       if (Math.abs(e.touches[0].clientX - t0x) > 8) touchMoved = true;
     }
