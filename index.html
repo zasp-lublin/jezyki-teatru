@@ -657,7 +657,15 @@ function init() {
     }
     if (e.changedTouches.length === 1 && zoomLevel <= 1 && !touchMoved) {
       const dx = e.changedTouches[0].clientX - t0x;
-      if (Math.abs(dx) > 40) dx < 0 ? flip('next') : flip('prev');
+      if (Math.abs(dx) > 40) {
+        // Swipe
+        dx < 0 ? flip('next') : flip('prev');
+      } else {
+        // Single tap: flip based on which side of the page was tapped
+        const rect = canvas.getBoundingClientRect();
+        const x = e.changedTouches[0].clientX - rect.left;
+        if (x > rect.width / 2) flip('next'); else flip('prev');
+      }
     }
   }, { passive: true });
 
